@@ -59,7 +59,7 @@ extern "C"
 
 /** Set an IP address given by the four byte-parts */
 #define EOE_IP4_ADDR_TO_U32(ipaddr,a,b,c,d)  \
-   (ipaddr)->addr = EOE_HTONL(EOE_MAKEU32(a,b,c,d))
+   (ipaddr)->addr = (uint32_t)EOE_HTONL(EOE_MAKEU32(a,b,c,d))
 
 /** Header frame info 1 */
 #define EOE_HDR_FRAME_TYPE_OFFSET      0

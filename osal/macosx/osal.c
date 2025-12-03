@@ -33,7 +33,7 @@ int osal_gettimeofday(struct timeval *tv, struct timezone *tz)
     * Also when using XENOMAI, only clock_gettime is RT safe */
    return_value = clock_gettime(CLOCK_MONOTONIC, &ts);
    tv->tv_sec = ts.tv_sec;
-   tv->tv_usec = ts.tv_nsec / 1000;
+   tv->tv_usec = (int)ts.tv_nsec / 1000;
    return return_value;
 }
 
@@ -43,7 +43,7 @@ ec_timet osal_current_time(void)
    ec_timet return_value;
 
    osal_gettimeofday(&current_time, 0);
-   return_value.sec = current_time.tv_sec;
+   return_value.sec = (uint32_t)current_time.tv_sec;
    return_value.usec = current_time.tv_usec;
    return return_value;
 }
@@ -71,7 +71,7 @@ void osal_timer_start(osal_timert * self, uint32 timeout_usec)
    timeout.tv_usec = timeout_usec % USECS_PER_SEC;
    timeradd(&start_time, &timeout, &stop_time);
 
-   self->stop_time.sec = stop_time.tv_sec;
+   self->stop_time.sec = (unsigned int)stop_time.tv_sec;
    self->stop_time.usec = stop_time.tv_usec;
 }
 
