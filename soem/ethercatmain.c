@@ -1064,17 +1064,23 @@ int ecx_mbxreceive(ecx_contextt *context, uint16 slave, ec_mbxbuft *mbx, int tim
             {
                MBXEp = (ec_mbxerrort *)mbx;
                ecx_mbxerror(context, slave, etohs(MBXEp->Detail));
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */               
                goto restart_poll; /* prevent emergency to cascade up, it is already handled. */
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
             }
             else if ((wkc > 0) && ((mbxh->mbxtype & 0x0f) == ECT_MBXT_COE)) /* CoE response? */
             {
                EMp = (ec_emcyt *)mbx;
                if ((etohs(EMp->CANOpen) >> 12) == 0x01) /* Emergency request? */
                {
-                  context->routing_cb(slave, mbx);
-                  ecx_mbxemergencyerror(context, slave, etohs(EMp->ErrorCode), EMp->ErrorReg,
-                          EMp->bData, etohs(EMp->w1), etohs(EMp->w2));
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+                  if(context->routing_cb) context->routing_cb(slave, mbx);
+                  else{
+                     ecx_mbxemergencyerror(context, slave, etohs(EMp->ErrorCode), EMp->ErrorReg,
+                        EMp->bData, etohs(EMp->w1), etohs(EMp->w2));
+                  }
                   goto restart_poll; /* prevent emergency to cascade up, it is already handled. */
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
                }
             }
             else if ((wkc > 0) && ((mbxh->mbxtype & 0x0f) == ECT_MBXT_EOE)) /* EoE response? */
@@ -1091,7 +1097,9 @@ int ecx_mbxreceive(ecx_contextt *context, uint16 slave, ec_mbxbuft *mbx, int tim
                      if (context->EOEhook(context, slave, eoembx) > 0)
                      {
                         /* Fragment handled by EoE hook */
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
                         goto restart_poll;
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */                        
                      }
                   }
                }
