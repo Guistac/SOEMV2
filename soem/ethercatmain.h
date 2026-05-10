@@ -431,6 +431,11 @@ struct ecx_context
    /** userdata, promotes application configuration esp. in EC_VER2 with multiple 
     * ec_context instances. Note: userdata memory is managed by application, not SOEM */
    void           *userdata;
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+   void (*lock_cb)(void);
+   void (*unlock_cb)(void);
+   void (*routing_cb)(uint16_t slave, void *mbxp);
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
 };
 
 #ifdef EC_VER1

@@ -130,6 +130,10 @@ int ecx_SDOread(ecx_contextt *context, uint16 slave, uint16 index, uint8 subinde
    uint8 cnt, toggle;
    boolean NotLast;
 
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+   if (context->lock_cb) context->lock_cb();
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
+
    ec_clearmbx(&MbxIn);
    /* Empty slave out mailbox if something is in. Timeout set to 0 */
    wkc = ecx_mbxreceive(context, slave, (ec_mbxbuft *)&MbxIn, 0);
@@ -307,6 +311,9 @@ int ecx_SDOread(ecx_contextt *context, uint16 slave, uint16 index, uint8 subinde
          }
       }
    }
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+   if (context->unlock_cb) context->unlock_cb();
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
    return wkc;
 }
 
@@ -336,6 +343,10 @@ int ecx_SDOwrite(ecx_contextt *context, uint16 Slave, uint16 Index, uint8 SubInd
    uint8 cnt, toggle;
    boolean  NotLast;
    const uint8 *hp;
+
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+   if (context->lock_cb) context->lock_cb();
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
 
    ec_clearmbx(&MbxIn);
    /* Empty slave out mailbox if something is in. Timeout set to 0 */
@@ -534,6 +545,9 @@ int ecx_SDOwrite(ecx_contextt *context, uint16 Slave, uint16 Index, uint8 SubInd
       }
    }
 
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+   if (context->unlock_cb) context->unlock_cb();
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
    return wkc;
 }
 

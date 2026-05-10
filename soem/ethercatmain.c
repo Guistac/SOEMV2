@@ -120,6 +120,11 @@ ecx_contextt  ecx_context = {
     NULL,               // .EOEhook()
     0,                  // .manualstatechange
     NULL,               // .userdata
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+    NULL,               // .lock_cb()
+    NULL,               // .unlock_cb()
+    NULL,               // .routing_cb()
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
 };
 #endif
 
@@ -1022,6 +1027,9 @@ int ecx_mbxreceive(ecx_contextt *context, uint16 slave, ec_mbxbuft *mbx, int tim
 
       osal_timer_start(&timer, timeout);
       wkc = 0;
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+   restart_poll:
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
       do /* wait for read mailbox available */
       {
          SMstat = 0;
@@ -1041,20 +1049,32 @@ int ecx_mbxreceive(ecx_contextt *context, uint16 slave, ec_mbxbuft *mbx, int tim
          do
          {
             wkc = ecx_FPRD(context->port, configadr, mbxro, mbxl, mbx, EC_TIMEOUTRET); /* get mailbox */
+/* --- CUSTOM_SOEM_MOD_START (Stacato: Slave-to-Slave Routing) --- */
+            if (wkc > 0)
+            {
+               uint16_t target_addr = etohs(mbxh->address);
+               if (target_addr != 0x0000 && context->routing_cb != NULL)
+               {
+                  context->routing_cb(slave, mbx);
+                  goto restart_poll;
+               }
+            }
+/* --- CUSTOM_SOEM_MOD_END (Stacato: Slave-to-Slave Routing) --- */
             if ((wkc > 0) && ((mbxh->mbxtype & 0x0f) == 0x00)) /* Mailbox error response? */
             {
                MBXEp = (ec_mbxerrort *)mbx;
                ecx_mbxerror(context, slave, etohs(MBXEp->Detail));
-               wkc = 0; /* prevent emergency to cascade up, it is already handled. */
+               goto restart_poll; /* prevent emergency to cascade up, it is already handled. */
             }
             else if ((wkc > 0) && ((mbxh->mbxtype & 0x0f) == ECT_MBXT_COE)) /* CoE response? */
             {
                EMp = (ec_emcyt *)mbx;
                if ((etohs(EMp->CANOpen) >> 12) == 0x01) /* Emergency request? */
                {
+                  context->routing_cb(slave, mbx);
                   ecx_mbxemergencyerror(context, slave, etohs(EMp->ErrorCode), EMp->ErrorReg,
                           EMp->bData, etohs(EMp->w1), etohs(EMp->w2));
-                  wkc = 0; /* prevent emergency to cascade up, it is already handled. */
+                  goto restart_poll; /* prevent emergency to cascade up, it is already handled. */
                }
             }
             else if ((wkc > 0) && ((mbxh->mbxtype & 0x0f) == ECT_MBXT_EOE)) /* EoE response? */
@@ -1071,7 +1091,7 @@ int ecx_mbxreceive(ecx_contextt *context, uint16 slave, ec_mbxbuft *mbx, int tim
                      if (context->EOEhook(context, slave, eoembx) > 0)
                      {
                         /* Fragment handled by EoE hook */
-                        wkc = 0;
+                        goto restart_poll;
                      }
                   }
                }
